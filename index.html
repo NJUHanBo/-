@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>York Christmas Trip</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Instrument Serif', serif; }
+        
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; opacity: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        input:focus { outline: none; box-shadow: none; }
+    </style>
+</head>
+<body class="bg-white text-slate-900 selection:bg-black selection:text-white">
+
+    <main class="w-full">
+        
+        <!-- Header -->
+        <header class="px-6 py-20 md:py-32 max-w-5xl mx-auto">
+            <h1 class="text-6xl md:text-8xl tracking-tighter mb-2">York Christmas</h1>
+            <p class="text-slate-400 font-mono text-xs uppercase tracking-widest">A Winter Journey</p>
+        </header>
+
+        <!-- Vertical Block List -->
+        <div id="board-container" class="w-full">
+            <!-- Days injected here -->
+        </div>
+
+    </main>
+
+    <script>
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const categories = [
+            { id: 'destinations', label: 'Destinations', icon: 'map-pin' },
+            { id: 'activities', label: 'Activities', icon: 'camera' },
+            { id: 'transport', label: 'Transport', icon: 'train' },
+            { id: 'food', label: 'Food & Lodging', icon: 'utensils' }
+        ];
+        const STORAGE_KEY = 'york_christmas_schedule';
+
+        // Default data from Flask server
+        const DEFAULT_DATA = {"Monday":[{"id":1765019109453,"content":"Bourton-on-the-Water(High street)","category":"destinations","completed":false},{"id":1765019132838,"content":"牛津-中餐？","category":"food","completed":false},{"id":1765019165889,"content":"Bourton-甜品？","category":"food","completed":false},{"id":1765019458885,"content":"牛津-Hinksey Park Car Park, Abingdon Rd, Oxford OX1 4PZ","category":"transport","completed":false},{"id":1765020654922,"content":"Bourton Vale Car Park","category":"transport","completed":false},{"id":1765020677143,"content":"city walk","category":"activities","completed":false},{"id":1765020684778,"content":"写生","category":"activities","completed":false},{"id":1765021168921,"content":"牛津-Radcliffe Square","category":"destinations","completed":false},{"id":1765021192804,"content":"牛津-Bridge of Sighs","category":"destinations","completed":false},{"id":1765021202598,"content":"牛津-Christ Church Meadow","category":"destinations","completed":false},{"id":1765022262620,"content":"Travelodge Burford Cotswolds","category":"food","completed":false}],"Tuesday":[{"id":1765056733213,"content":"Norfolk Arms Hotel, Ringinglow","category":"food","completed":false},{"id":1765056829158,"content":"Castleton parking","category":"transport","completed":false},{"id":1765056868324,"content":"峰区环线（Castleton+ Mam Tor +Great Ridge）","category":"destinations","completed":false},{"id":1765056875313,"content":"徒步，拍照，写生","category":"activities","completed":false}],"Wednesday":[{"id":1765057979348,"content":"Bakewell","category":"destinations","completed":false},{"id":1765058006349,"content":"转转写生","category":"activities","completed":false},{"id":1765058009137,"content":"拍照","category":"activities","completed":false},{"id":1765059416092,"content":"leeds","category":"destinations","completed":false},{"id":1765060001577,"content":"York","category":"destinations","completed":false},{"id":1765060901538,"content":"Travelodge York Central Layerthorpe","category":"food","completed":false}],"Thursday":[{"id":1765059291432,"content":"2pm--霍华德城堡","category":"destinations","completed":false},{"id":1765060021446,"content":"York","category":"destinations","completed":false},{"id":1765060027906,"content":"拍照","category":"activities","completed":false},{"id":1765060906635,"content":"Travelodge York Central Layerthorpe","category":"food","completed":false}],"Friday":[{"id":1765060430025,"content":"惠特比","category":"destinations","completed":false},{"id":1765060442715,"content":"路过北约克荒原","category":"destinations","completed":false},{"id":1765060450763,"content":"斯卡布罗","category":"destinations","completed":false},{"id":1765060742444,"content":"Travelodge 斯卡布罗","category":"food","completed":false}],"Saturday":[{"id":1765060928027,"content":"Cambridge","category":"destinations","completed":false},{"id":1765060935887,"content":"斯卡布罗集市附近","category":"destinations","completed":false},{"id":1765060943375,"content":"home","category":"food","completed":false}],"Sunday":[]};
+
+        // The Chroma Palette
+        const colors = {
+            'Monday':    { bg: 'bg-[#EAE4DD]', text: 'text-[#4A4A4A]', border: 'border-[#4A4A4A]' }, 
+            'Tuesday':   { bg: 'bg-[#D4D8D2]', text: 'text-[#2C3E2F]', border: 'border-[#2C3E2F]' }, 
+            'Wednesday': { bg: 'bg-[#D8DEE9]', text: 'text-[#2E3440]', border: 'border-[#2E3440]' }, 
+            'Thursday':  { bg: 'bg-[#E5D4C8]', text: 'text-[#5D4037]', border: 'border-[#5D4037]' }, 
+            'Friday':    { bg: 'bg-[#DCDCDC]', text: 'text-[#1A1A1A]', border: 'border-[#1A1A1A]' }, 
+            'Saturday':  { bg: 'bg-[#2E2E2E]', text: 'text-[#F5F5F5]', border: 'border-[#F5F5F5]' }, 
+            'Sunday':    { bg: 'bg-[#F0F0F0]', text: 'text-[#9E9E9E]', border: 'border-[#9E9E9E]' } 
+        };
+
+        // Data Management (localStorage)
+        function loadData() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const data = JSON.parse(stored);
+                // Ensure all tasks have category
+                for (let day in data) {
+                    data[day] = data[day].map(task => ({
+                        ...task,
+                        category: task.category || 'activities'
+                    }));
+                }
+                return data;
+            }
+            // Use default data if available, otherwise initialize empty
+            if (DEFAULT_DATA && Object.keys(DEFAULT_DATA).length > 0) {
+                // Ensure all tasks have category
+                for (let day in DEFAULT_DATA) {
+                    DEFAULT_DATA[day] = DEFAULT_DATA[day].map(task => ({
+                        ...task,
+                        category: task.category || 'activities'
+                    }));
+                }
+                saveData(DEFAULT_DATA);
+                return DEFAULT_DATA;
+            }
+            // Initialize empty structure
+            const defaultData = {};
+            days.forEach(day => { defaultData[day] = []; });
+            saveData(defaultData);
+            return defaultData;
+        }
+
+        async function tryImportFromServer() {
+            try {
+                const response = await fetch('http://127.0.0.1:5001/api/schedule');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Ensure all tasks have category
+                    for (let day in data) {
+                        data[day] = data[day].map(task => ({
+                            ...task,
+                            category: task.category || 'activities'
+                        }));
+                    }
+                    saveData(data);
+                    // Reload to show imported data
+                    fetchSchedule();
+                }
+            } catch (error) {
+                // Server not available, ignore
+            }
+        }
+
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        lucide.createIcons();
+
+        function fetchSchedule() {
+            const data = loadData();
+            renderBoard(data);
+        }
+
+        function renderBoard(data) {
+            const container = document.getElementById('board-container');
+            container.innerHTML = '';
+
+            days.forEach((day, index) => {
+                const tasks = data[day] || [];
+                const theme = colors[day];
+                
+                // Full bleed section, no card borders
+                const section = document.createElement('div');
+                section.className = `${theme.bg} ${theme.text} w-full min-h-[50vh] px-6 py-16 md:py-24 transition-colors duration-700 flex flex-col md:flex-row gap-8 md:gap-20 fade-in group`;
+                section.style.animationDelay = `${index * 100}ms`;
+
+                section.innerHTML = `
+                    <!-- Left: Day Title -->
+                    <div class="flex-none w-48 pt-2">
+                        <h2 class="text-6xl md:text-7xl opacity-90">${day}</h2>
+                        <span class="block mt-4 font-mono text-xs opacity-50 uppercase tracking-widest">${tasks.length} Items</span>
+                    </div>
+
+                    <!-- Right: Categorized Grid -->
+                    <div class="flex-1 max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                        ${categories.map(cat => renderCategorySection(cat, tasks, day, theme)).join('')}
+                    </div>
+                `;
+                container.appendChild(section);
+            });
+            lucide.createIcons();
+        }
+
+        function renderCategorySection(cat, tasks, day, theme) {
+            const catTasks = tasks.filter(t => t.category === cat.id);
+            const strikeColor = theme.text.includes('text-[#F5F5F5]') ? 'decoration-white/30' : 'decoration-black/30';
+            const hoverBg = theme.text.includes('text-[#F5F5F5]') ? 'hover:bg-white/10' : 'hover:bg-black/5';
+            
+            return `
+                <div class="flex flex-col gap-4 group/section">
+                    <!-- Category Header -->
+                    <div class="flex items-center gap-2 opacity-60 mb-2">
+                        <i data-lucide="${cat.icon}" class="w-4 h-4"></i>
+                        <h3 class="font-mono text-xs uppercase tracking-widest">${cat.label}</h3>
+                    </div>
+                    
+                    <!-- Task List -->
+                    <div class="space-y-3 min-h-[2rem]">
+                        ${catTasks.length === 0 ? 
+                            `<div class="opacity-20 text-sm font-light italic hidden group-hover/section:block">Empty</div>` : 
+                            catTasks.map(task => `
+                                <div class="group/task flex items-start gap-3 relative -ml-4 pl-4 ${hoverBg} rounded-lg py-1 transition-colors">
+                                    <div class="mt-2 w-1.5 h-1.5 rounded-full border border-current opacity-60 flex-none ${task.completed ? 'bg-current' : 'bg-transparent'}"></div>
+                                    <span class="text-lg font-light leading-relaxed flex-1 cursor-pointer select-none transition-all ${task.completed ? 'opacity-40 line-through ' + strikeColor : 'opacity-90'}" 
+                                          onclick="toggleTask(${task.id})">
+                                        ${task.content}
+                                    </span>
+                                    <button onclick="deleteTask(${task.id})" class="opacity-0 group-hover/task:opacity-100 transition-opacity absolute right-2 top-2">
+                                        <i data-lucide="x" class="w-4 h-4 opacity-50 hover:opacity-100"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                    </div>
+
+                    <!-- Input (Minimalist, no borders until focus/hover) -->
+                    <form onsubmit="addTask(event, '${day}', '${cat.id}')" class="relative mt-2 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300">
+                        <input type="text" name="content" placeholder="+ ${cat.label}..." 
+                            class="w-full bg-transparent border-b ${theme.border} border-opacity-20 py-1 text-base placeholder-current placeholder-opacity-30 focus:border-opacity-100 focus:outline-none transition-all">
+                    </form>
+                </div>
+            `;
+        }
+
+        function addTask(e, day, category) {
+            e.preventDefault();
+            const input = e.target.content;
+            const content = input.value.trim();
+            if (!content) return;
+
+            const data = loadData();
+            const newTask = {
+                id: Date.now(),
+                content: content,
+                category: category,
+                completed: false
+            };
+            data[day].push(newTask);
+            saveData(data);
+            
+            input.value = '';
+            fetchSchedule();
+        }
+
+        function toggleTask(id) {
+            const data = loadData();
+            for (let day in data) {
+                const task = data[day].find(t => t.id === id);
+                if (task) {
+                    task.completed = !task.completed;
+                    saveData(data);
+                    fetchSchedule();
+                    return;
+                }
+            }
+        }
+
+        function deleteTask(id) {
+            if(!confirm('Remove item?')) return;
+            
+            const data = loadData();
+            for (let day in data) {
+                data[day] = data[day].filter(t => t.id !== id);
+            }
+            saveData(data);
+            fetchSchedule();
+        }
+
+        // Initialize
+        fetchSchedule();
+    </script>
+</body>
+</html>
+
